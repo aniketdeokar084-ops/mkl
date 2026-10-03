@@ -1,2 +1,11 @@
-# Google App Engine generated folder
-appengine-generated/
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.vscode/
+.idea/
+dist/
+build/
+*.swp
+*.swo

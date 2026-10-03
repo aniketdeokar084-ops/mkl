@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusFlow Unit Test Suite</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .badge-pass { background: #dcfce7; color: #15803d; }
+    .badge-fail { background: #fee2e2; color: #b91c1c; }
+    .suite-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .test-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.95rem;
+    }
+    .test-item:last-child { border-bottom: none; }
+    .test-icon { font-size: 1.1rem; }
+    .error-msg {
+      margin-left: 28px;
+      color: #b91c1c;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <span>🍅 FocusFlow Test Runner</span>
+    <span id="summary-badge" class="badge">Running tests...</span>
+  </h1>
+  <p>Runs in-browser test assertions on pure calculation functions and storage schemas.</p>
+
+  <div id="test-container"></div>
+
+  <script type="module">
+    import { calculateProgress, getNextMode, calculateStreak } from '../js/timer.js';
+    import { formatTime, formatDate, sanitize, clamp } from '../js/utils.js';
+    import { exportCSV } from '../js/storage.js';
+
+    const suites = [];
+    let currentSuite = null;
+
+    function describe(name, fn) {
+      currentSuite = { name, tests: [] };
+      suites.push(currentSuite);
+      fn();
+    }
+
+    function test(name, fn) {
+      try {
+        fn();
+        currentSuite.tests.push({ name, pass: true });
+      } catch (err) {
+        currentSuite.tests.push({ name, pass: false, error: err.message });
+      }
+    }
+
+    function expect(actual) {
+      return {
+        toBe(expected) {
+          if (actual !== expected) throw new Error(`Expected ${expected}, got ${actual}`);
+        },
+        toEqual(expected) {
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeGreaterThan(val) {
+          if (!(actual > val)) throw new Error(`Expected ${actual} > ${val}`);
+        }
+      };
+    }
+
+    // Suite 1: Timer pure calculation logic
+    describe('Timer Logic & Progress Calculations', () => {
+      test('calculateProgress returns 0 at full remaining time', () => {
+        expect(calculateProgress(1500, 1500)).toBe(0);
+      });
+      test('calculateProgress returns 0.5 at halfway mark', () => {
+        expect(calculateProgress(750, 1500)).toBe(0.5);
+      });
+      test('calculateProgress returns 1 at completion', () => {
+        expect(calculateProgress(0, 1500)).toBe(1);
+      });
+      test('calculateProgress handles 0 total gracefully', () => {
+        expect(calculateProgress(0, 0)).toBe(0);
+      });
+      test('getNextMode returns shortBreak after standard focus session', () => {
+        expect(getNextMode('focus', 1, 4)).toBe('shortBreak');
+      });
+      test('getNextMode returns longBreak when reaching target cycle', () => {
+        expect(getNextMode('focus', 4, 4)).toBe('longBreak');
+      });
+      test('getNextMode returns focus after shortBreak', () => {
+        expect(getNextMode('shortBreak', 1, 4)).toBe('focus');
+      });
+      test('getNextMode returns focus after longBreak', () => {
+        expect(getNextMode('longBreak', 0, 4)).toBe('focus');
+      });
+    });
+
+    // Suite 2: Streak calculation
+    describe('Streak Calculation Engine', () => {
+      test('Returns 0 for empty sessions list', () => {
+        expect(calculateStreak([])).toEqual({ current: 0, best: 0 });
+      });
+      test('Recognizes today session as active streak of 1', () => {
+        const sessions = [{ mode: 'focus', completedAt: Date.now() }];
+        expect(calculateStreak(sessions).current).toBe(1);
+      });
+      test('Accumulates consecutive daily sessions', () => {
+        const now = Date.now();
+        const day = 86400000;
+        const sessions = [
+          { mode: 'focus', completedAt: now },
+          { mode: 'focus', completedAt: now - day },
+          { mode: 'focus', completedAt: now - day * 2 }
+        ];
+        const res = calculateStreak(sessions);
+        expect(res.current).toBe(3);
+        expect(res.best).toBe(3);
+      });
+      test('Ignores break sessions during streak counts', () => {
+        const now = Date.now();
+        const sessions = [
+          { mode: 'shortBreak', completedAt: now },
+          { mode: 'longBreak', completedAt: now }
+        ];
+        expect(calculateStreak(sessions).current).toBe(0);
+      });
+    });
+
+    // Suite 3: Formatting & Utilities
+    describe('Time Formatting & Input Sanitization', () => {
+      test('formatTime correctly formats MM:SS', () => {
+        expect(formatTime(0)).toBe('00:00');
+        expect(formatTime(65)).toBe('01:05');
+        expect(formatTime(1500)).toBe('25:00');
+      });
+      test('sanitize strips potentially dangerous HTML entities', () => {
+        expect(sanitize('<script>alert("xss")</script>')).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+      });
+      test('clamp confines values strictly between boundaries', () => {
+        expect(clamp(150, 1, 100)).toBe(100);
+        expect(clamp(-5, 0, 10)).toBe(0);
+        expect(clamp(5, 0, 10)).toBe(5);
+      });
+    });
+
+    // Render results
+    const container = document.getElementById('test-container');
+    let totalTests = 0;
+    let passedTests = 0;
+
+    suites.forEach(suite => {
+      const card = document.createElement('div');
+      card.className = 'suite-card';
+      
+      const h2 = document.createElement('h2');
+      h2.textContent = suite.name;
+      h2.style.marginTop = '0';
+      card.appendChild(h2);
+
+      suite.tests.forEach(t => {
+        totalTests++;
+        if (t.pass) passedTests++;
+
+        const row = document.createElement('div');
+        row.className = 'test-item';
+        row.innerHTML = `<span class="test-icon">${t.pass ? '✅' : '❌'}</span><span>${t.name}</span>`;
+        card.appendChild(row);
+
+        if (!t.pass) {
+          const err = document.createElement('div');
+          err.className = 'error-msg';
+          err.textContent = t.error;
+          card.appendChild(err);
+        }
+      });
+
+      container.appendChild(card);
+    });
+
+    const badge = document.getElementById('summary-badge');
+    if (passedTests === totalTests) {
+      badge.className = 'badge badge-pass';
+      badge.textContent = `All ${totalTests} Tests Passed`;
+    } else {
+      badge.className = 'badge badge-fail';
+      badge.textContent = `${totalTests - passedTests} of ${totalTests} Tests Failed`;
+    }
+  </script>
+</body>
+</html>
