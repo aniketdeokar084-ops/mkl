@@ -1,0 +1,89 @@
+/* Dark Theme Overrides */
+[data-theme='dark'] {
+  --color-bg: #1a1a2e;
+  --color-bg-secondary: #16213e;
+  --color-bg-tertiary: #0f3460;
+  --color-surface: #1e1e3a;
+  --color-text: #e8e8e8;
+  --color-text-secondary: #a0a0a0;
+  --color-text-tertiary: #6c6c6c;
+  --color-border: #2a2a4a;
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  
+  --color-focus-bg: #2d1b1b;
+  --color-short-break-bg: #1b2d1b;
+  --color-long-break-bg: #1b1b2d;
+}
+
+/* System Theme (Media Query) */
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] {
+    --color-bg: #1a1a2e;
+    --color-bg-secondary: #16213e;
+    --color-bg-tertiary: #0f3460;
+    --color-surface: #1e1e3a;
+    --color-text: #e8e8e8;
+    --color-text-secondary: #a0a0a0;
+    --color-text-tertiary: #6c6c6c;
+    --color-border: #2a2a4a;
+    --color-shadow: rgba(0, 0, 0, 0.3);
+    
+    --color-focus-bg: #2d1b1b;
+    --color-short-break-bg: #1b2d1b;
+    --color-long-break-bg: #1b1b2d;
+  }
+}
+
+/* Accent Colors */
+[data-accent='tomato'] {
+  --color-primary: #e74c3c;
+  --color-primary-light: #ff6b6b;
+  --color-primary-dark: #c0392b;
+  --color-focus: #e74c3c;
+}
+
+[data-accent='ocean'] {
+  --color-primary: #3498db;
+  --color-primary-light: #5dade2;
+  --color-primary-dark: #2980b9;
+  --color-focus: #3498db;
+}
+
+[data-accent='forest'] {
+  --color-primary: #27ae60;
+  --color-primary-light: #2ecc71;
+  --color-primary-dark: #219a52;
+  --color-focus: #27ae60;
+}
+
+[data-accent='purple'] {
+  --color-primary: #9b59b6;
+  --color-primary-light: #af7ac5;
+  --color-primary-dark: #8e44ad;
+  --color-focus: #9b59b6;
+}
+
+/* Mode-specific body background tints adjustments based on theme & accents */
+/* Light Mode (default) */
+body.mode-focus { background-color: var(--color-focus-bg); }
+body.mode-shortBreak { background-color: var(--color-short-break-bg); }
+body.mode-longBreak { background-color: var(--color-long-break-bg); }
+
+/* Dynamic mode tints when accent changes for Focus */
+[data-accent='tomato'] body.mode-focus { --color-focus-bg: #fff5f5; }
+[data-accent='ocean'] body.mode-focus { --color-focus-bg: #f0f7ff; }
+[data-accent='forest'] body.mode-focus { --color-focus-bg: #f0fff4; }
+[data-accent='purple'] body.mode-focus { --color-focus-bg: #faf0ff; }
+
+/* Dark Theme dynamic mode tints */
+[data-theme='dark'][data-accent='tomato'] body.mode-focus { --color-focus-bg: #2d1b1b; }
+[data-theme='dark'][data-accent='ocean'] body.mode-focus { --color-focus-bg: #1b242d; }
+[data-theme='dark'][data-accent='forest'] body.mode-focus { --color-focus-bg: #1b2d21; }
+[data-theme='dark'][data-accent='purple'] body.mode-focus { --color-focus-bg: #261b2d; }
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'][data-accent='tomato'] body.mode-focus { --color-focus-bg: #2d1b1b; }
+  [data-theme='system'][data-accent='ocean'] body.mode-focus { --color-focus-bg: #1b242d; }
+  [data-theme='system'][data-accent='forest'] body.mode-focus { --color-focus-bg: #1b2d21; }
+  [data-theme='system'][data-accent='purple'] body.mode-focus { --color-focus-bg: #261b2d; }
+}
